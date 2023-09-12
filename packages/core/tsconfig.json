@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "target": "ES6",
+        "module": "CommonJS",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "inlineSourceMap": true,
+        "removeComments": true,
+        "strict": true,
+        "downlevelIteration": true,
+        "baseUrl": "./src",
+        "rootDir": "./",
+        "outDir": "./dest",
+    },
+}
