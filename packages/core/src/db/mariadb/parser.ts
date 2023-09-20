@@ -1,6 +1,6 @@
-import { MariadbSchema, MariadbSchemaMap } from "mariadb-connection";
+import { MariadbSchema, MariadbSchemaMap } from "../../db/mariadb/connection";
 
-const RDBType = [
+export const DataType = [
   "bigint",
   "text",
   "varchar",
@@ -13,17 +13,26 @@ const RDBType = [
   "boolean",
 ] as const;
 
-interface Schema {
-  column: string;
-  type: (typeof RDBType)[number];
-  typeOption?: any;
-  columnOption?: any;
+export interface Schema {
+  columnName: string;
+  type: (typeof DataType)[number];
+  valueOption?: string;
+  typeOption?: {
+    unsigned?: boolean;
+    [key: string]: any;
+  };
+  columnOption?: {
+    primaryKey?: boolean;
+    default?: any;
+    auto_increment?: boolean;
+    [key: string]: any;
+  };
 }
 
 export interface RDBData {
   Database: String;
   Table: String;
-  Schema: Schema[];
+  Schema: MariadbSchema;
 }
 
 export function mariadbParse(inputSchemaMap: MariadbSchemaMap) {
@@ -38,8 +47,9 @@ export function mariadbParse(inputSchemaMap: MariadbSchemaMap) {
       const _parsedColumnOption = parseColumnOption(field);
       field.Default;
       const parsedResult: Schema = {
-        column: field.Field,
+        columnName: field.Field,
         type: _parsedType.type,
+        valueOption: _parsedType.valueOption,
         typeOption: _parsedType.typeOption,
         columnOption: _parsedColumnOption,
       };
@@ -47,15 +57,20 @@ export function mariadbParse(inputSchemaMap: MariadbSchemaMap) {
       parsedColumns.push(parsedResult);
     }
 
-    const tableName = tableNames.shift();
+    const tableName = tableNames.shift()!;
 
-    result.push({ table: tableName, schema: parsedColumns });
+    result.push({ tableName: tableName, columns: parsedColumns });
     parsedColumns = [];
   }
 
   return result;
 }
 
+/**
+ * """
+ * `id` ${type} PRIMARY KEY AUTO_INCREMENT
+ * """
+ */
 function parseType(inputString: string) {
   const typeRegex = /^([^\s]*)(.*)/;
   const result = typeRegex.exec(inputString);
@@ -66,7 +81,7 @@ function parseType(inputString: string) {
 
   let temp;
   let type = result[1];
-  let dataTypeOption;
+  let dataValueOption;
   let options = result[2]
     .split(/\s/)
     .filter((x) => {
@@ -78,28 +93,33 @@ function parseType(inputString: string) {
   temp = type.split("(");
   type = temp[0];
   if (temp.length == 2) {
-    dataTypeOption = temp[1].slice(0, -1);
+    dataValueOption = temp[1].slice(0, -1);
   } else if (temp.length > 1) {
     throw new Error(`Can't parse a column ${inputString}`);
   }
 
-  if (!RDBType.includes(type as (typeof RDBType)[number])) {
+  if (!DataType.includes(type as (typeof DataType)[number])) {
     throw new Error(`Undefined column type ${inputString}`);
   }
 
   return {
-    type: type as (typeof RDBType)[number],
+    type: type as (typeof DataType)[number],
+    valueOption: dataValueOption ? `(${dataValueOption})` : "",
     typeOption: {
-      valueOption: dataTypeOption,
       ...options,
     },
   };
 }
 
+/**
+ * """
+ * `id` INT UNSIGNED ${ColumnOption}
+ * """
+ */
 function parseColumnOption(input: MariadbSchema) {
   let result: any = {};
   if (input.Key == "PRI") {
-    result.primaryKey = 1;
+    result.primaryKey = true;
   }
   if (input.Default || input.Default === null) {
     result.default = input.Default;
@@ -116,5 +136,9 @@ function parseColumnOption(input: MariadbSchema) {
 }
 
 export function printPrettyJson(inputJson: any) {
-  console.log(JSON.stringify(inputJson, null, 2));
+  const output = JSON.stringify(inputJson, null, 2)
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .trim();
+  console.log(output);
 }
