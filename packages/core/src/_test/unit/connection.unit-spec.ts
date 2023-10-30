@@ -1,10 +1,11 @@
 import { mariadbParse, printPrettyJson } from "../../db/mariadb/parser";
 import { getConnection, getDatabaseSchemas } from "../../db/mariadb/connection";
-import { MigrationMapper } from "../../db/mariadb/migration";
+
 import {
   makeMigrationAST,
   makerCreateTableQuery,
 } from "../../db/mariadb/query-builder";
+import { MigrationMapper } from "db/mariadb/builder/type";
 
 describe("Connection test", () => {
   it("should get data from connection", async () => {

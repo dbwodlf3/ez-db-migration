@@ -1,34 +1,8 @@
-import { MigrationMapper } from "./migration";
-import { printPrettyJson, Schema } from "./parser";
-
-export interface MigrationAST {
-  meta: {
-    tableName: string;
-  };
-  originMeta: {
-    tableName: string;
-  };
-  columns: {
-    [key: string]: {
-      type: string;
-      valueOption?: string;
-      typeOption?: {
-        unsigned?: boolean;
-        [key: string]: any;
-      };
-      columnOption?: {
-        primaryKey?: boolean;
-        default?: any;
-        auto_increment?: boolean;
-        [key: string]: any;
-      };
-      [key: string]: any;
-    };
-  };
-}
+import { MigrationAST, MigrationMapper } from "./builder/type";
+import { ParsedSchema } from "./parser/type";
 
 export function makeMigrationAST(input: {
-  tables: { tableName: string; columns: Schema[] }[];
+  tables: { tableName: string; columns: ParsedSchema[] }[];
   mappers: MigrationMapper[];
 }): MigrationAST[] {
   const tables = input.tables;
@@ -78,14 +52,6 @@ export function makeMigrationAST(input: {
 export function makerCreateTableQuery(input: MigrationAST[]) {
   const asts = input;
   const queries: string[] = [];
-
-  //   CREATE TABLE `Users_State` (
-  //     `userId` INT NOT NULL,
-  //     `isBlocked` TINYINT NOT NULL,
-  //     `isActive` TINYINT NOT NULL,
-  //     `isEmailVerified` TINYINT NOT NULL,
-  //     PRIMARY KEY (`userId`)
-  // );
 
   for (const ast of asts) {
     const columns: string[] = [];

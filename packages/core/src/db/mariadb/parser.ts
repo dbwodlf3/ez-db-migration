@@ -1,52 +1,20 @@
-import { MariadbSchema, MariadbSchemaMap } from "../../db/mariadb/connection";
-
-export const DataType = [
-  "bigint",
-  "text",
-  "varchar",
-  "tinyint",
-  "timestamp",
-  "datetime",
-  "int",
-  "tinyint",
-  "double",
-  "boolean",
-] as const;
-
-export interface Schema {
-  columnName: string;
-  type: (typeof DataType)[number];
-  valueOption?: string;
-  typeOption?: {
-    unsigned?: boolean;
-    [key: string]: any;
-  };
-  columnOption?: {
-    primaryKey?: boolean;
-    default?: any;
-    auto_increment?: boolean;
-    [key: string]: any;
-  };
-}
-
-export interface RDBData {
-  Database: String;
-  Table: String;
-  Schema: MariadbSchema;
-}
+import { MariadbSchemaMap } from "./connection";
+import { MariadbSchema } from "./connection/type";
+import { ColumnDataTypes } from "./domain/type";
+import { ParsedSchema } from "./parser/type";
 
 export function mariadbParse(inputSchemaMap: MariadbSchemaMap) {
   const tableNames = Object.keys(inputSchemaMap);
   const tableSchemas = Object.values(inputSchemaMap);
   const result = [];
-  let parsedColumns: Schema[] = [];
+  let parsedColumns: ParsedSchema[] = [];
 
   for (const tableSchema of tableSchemas) {
     for (const field of tableSchema) {
       const _parsedType = parseType(field.Type);
       const _parsedColumnOption = parseColumnOption(field);
       field.Default;
-      const parsedResult: Schema = {
+      const parsedResult: ParsedSchema = {
         columnName: field.Field,
         type: _parsedType.type,
         valueOption: _parsedType.valueOption,
@@ -98,12 +66,12 @@ function parseType(inputString: string) {
     throw new Error(`Can't parse a column ${inputString}`);
   }
 
-  if (!DataType.includes(type as (typeof DataType)[number])) {
+  if (!ColumnDataTypes.includes(type as (typeof ColumnDataTypes)[number])) {
     throw new Error(`Undefined column type ${inputString}`);
   }
 
   return {
-    type: type as (typeof DataType)[number],
+    type: type as (typeof ColumnDataTypes)[number],
     valueOption: dataValueOption ? `(${dataValueOption})` : "",
     typeOption: {
       ...options,
